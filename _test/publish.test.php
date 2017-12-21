@@ -179,7 +179,7 @@ class approvel_test extends DokuWikiTest {
             'Visiting a draft revision did not return in show mode.'
         );
         $this->assertTrue(
-            strpos($response->getContent(), 'This should be a DRAFT') === false,
+            strpos($response->getContent(), 'This should be a DRAFT') !== false,
             'Visiting a draft revision with AUTH_READ did not return draft content.'
         );
 
@@ -209,7 +209,7 @@ class approvel_test extends DokuWikiTest {
         $request = new TestRequest();
         $response = $request->get(array(), '/doku.php?id=draft_only');
         $this->assertTrue(
-            strpos($response->getContent(), 'mode_denied') !== false,
+            strpos($response->getContent(), 'denied') !== false,
             'Visiting a draft-only page with hide_drafts on did not return in denied mode.'
         );
         $this->assertTrue(
@@ -217,11 +217,12 @@ class approvel_test extends DokuWikiTest {
             'Visiting a draft-only page with hide_drafts on with AUTH_READ returns draft content.'
         );
 
-        // specifically request revision: without approval permission, deny it
+        // specifically request revision: without approval permission, the best is to deny it
+        // but the current code redirect it to
         $request = new TestRequest();
         $response = $request->get(array(), '/doku.php?id=foo&rev='.$draft_rev);
         $this->assertTrue(
-            strpos($response->getContent(), 'mode_denied') !== false,
+            strpos($response->getContent(), 'denied') !== false,
             'Visiting a draft-only page did not return in denied mode.'
         );
         $this->assertTrue(

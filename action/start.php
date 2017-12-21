@@ -22,6 +22,7 @@ class action_plugin_publish_start extends DokuWiki_Action_Plugin {
         global $REV;
         global $INFO;
         global $ID;
+        global $INPUT;
 
         if ($ACT !== 'show') {
             return;
@@ -30,8 +31,6 @@ class action_plugin_publish_start extends DokuWiki_Action_Plugin {
         if ($REV != '') {
             return;
         }
-
-        fwrite(STDERR, print_r(array($INFO['perm'], AUTH_READ, $_GET['force_rev'], $ID, $this->hlp->isActive(), $this->hlp->isCurrentRevisionApproved(), $this->hlp->getLatestApprovedRevision()), true));
 
         if ($INFO['perm'] != AUTH_READ) {
             return;
@@ -46,7 +45,8 @@ class action_plugin_publish_start extends DokuWiki_Action_Plugin {
             return;
         }
 
-        if (!$this->hlp->isCurrentRevisionApproved()) {
+        if (!$this->hlp->isCurrentRevisionApproved() && !$INPUT->has('rev')){
+            // if rev is present, no redirect
             $latestApproved = $this->hlp->getLatestApprovedRevision();
 
             if ($latestApproved) {
