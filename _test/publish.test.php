@@ -104,6 +104,7 @@ class approvel_test extends DokuWikiTest {
             'Approving a page failed with standard options.'
         );
 
+        sleep(1); // create a different timestamp
         saveWikiText('foo', 'This should be a DRAFT', 'draft');
         $draft_rev = @filemtime(wikiFN('foo'));
 
