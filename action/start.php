@@ -40,13 +40,14 @@ class action_plugin_publish_start extends DokuWiki_Action_Plugin {
             return;
         }
 
+        fwrite(STDERR, print_r(array($ID, $this->hlp->isActive(), $this->hlp->isCurrentRevisionApproved(), $this->hlp->getLatestApprovedRevision()), true));
+
         if (!$this->hlp->isActive()) {
             return;
         }
 
         if (!$this->hlp->isCurrentRevisionApproved()) {
             $latestApproved = $this->hlp->getLatestApprovedRevision();
-            fwrite(STDERR, print_r(array($ID, $this->hlp->getLatestApprovedRevision()), true));
 
             if ($latestApproved) {
                 $REV = $latestApproved;
