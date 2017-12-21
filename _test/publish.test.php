@@ -1,5 +1,4 @@
 <?php
-
 /**
  * General tests for the publish plugin
  *
@@ -105,6 +104,7 @@ class approvel_test extends DokuWikiTest {
             'Approving a page failed with standard options.'
         );
 
+        sleep(1); // create a different timestamp
         saveWikiText('foo', 'This should be a DRAFT', 'draft');
         $draft_rev = @filemtime(wikiFN('foo'));
 
@@ -117,11 +117,11 @@ class approvel_test extends DokuWikiTest {
         $response = $request->get(array(), '/doku.php?id=foo');
         $this->assertTrue(
             strpos($response->getContent(), 'mode_show') !== false,
-            'Visiting a page did not return in show mode.'
+            'Visiting a page with draft with @admin did not return in show mode.'
         );
         $this->assertTrue(
             strpos($response->getContent(), 'This should be a DRAFT') !== false,
-            'Visiting a page with draft did not return draft revision.'
+            'Visiting a page with draft with @admin did not return draft revision.'
         );
 
         // switch to @ALL - AUTH_READ
@@ -138,7 +138,7 @@ class approvel_test extends DokuWikiTest {
         $response = $request->get(array(), '/doku.php?id=foo');
         $this->assertTrue(
             strpos($response->getContent(), 'mode_show') !== false,
-            'Visiting a page did not return in show mode.'
+            'Visiting a page with draft with AUTH_READ did not return in show mode.'
         );
         $this->assertTrue(
             strpos($response->getContent(), 'This should get APPROVED') !== false,
