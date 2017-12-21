@@ -1,5 +1,4 @@
 <?php
-
 /**
  * General tests for the publish plugin
  *
