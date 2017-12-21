@@ -33,8 +33,9 @@ class approvel_test extends DokuWikiTest {
         $conf['useacl']    = 1;
         $conf['superuser'] = '@admin';
         $AUTH_ACL = array(
-            '*                     @ALL        4',
-            '*                     @admin     16',);
+            '*                     @ALL        2',  // READ only
+            '*                     @author     4',  // EDIT
+            '*                     @admin     16',);// DELETE
     }
 
     /**
@@ -97,8 +98,6 @@ class approvel_test extends DokuWikiTest {
 
         // init one approved and one draft
         saveWikiText('foo', 'This should get APPROVED', 'approved');
-        $draft_rev = @filemtime(wikiFN('foo'));
-        fwrite(STDERR, print_r($draft_rev, TRUE));
 
         $request = new TestRequest();
         $response = $request->get(array(), '/doku.php?id=foo&publish_approve=1');
@@ -110,7 +109,6 @@ class approvel_test extends DokuWikiTest {
         sleep(1); // create a different timestamp
         saveWikiText('foo', 'This should be a DRAFT', 'draft');
         $draft_rev = @filemtime(wikiFN('foo'));
-        fwrite(STDERR, print_r($draft_rev, TRUE));
 
         // draft-only page
         saveWikiText('draft_only', 'This should be a DRAFT', 'draft');
@@ -140,7 +138,6 @@ class approvel_test extends DokuWikiTest {
         // @ALL should see approved revision
         $request = new TestRequest();
         $response = $request->get(array(), '/doku.php?id=foo');
-        fwrite(STDERR, print_r($response->getContent(), TRUE));
         $this->assertTrue(
             strpos($response->getContent(), 'mode_show') !== false,
             'Visiting a page with draft with AUTH_READ did not return in show mode.'
