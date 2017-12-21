@@ -7,6 +7,7 @@
  * @group plugins
  * @group integrationtests
  * @author Michael Große <grosse@cosmocode.de>
+ * @author Phy25 <git@phy25.com>
  */
 class approvel_test extends DokuWikiTest {
 
@@ -36,6 +37,16 @@ class approvel_test extends DokuWikiTest {
             '*                     @ALL        1',  // READ only
             '*                     @author     4',  // EDIT
             '*                     @admin     16',);// DELETE
+    }
+
+    private function logout(){
+        global $USERINFO;
+        $USERINFO = null;
+
+        global $default_server_vars;
+        $default_server_vars['REMOTE_USER'] = null; //Hack until Issue splitbrain/dokuwiki#1099 is fixed
+
+        $_SERVER['REMOTE_USER'] = null;
     }
 
     /**
@@ -83,24 +94,12 @@ class approvel_test extends DokuWikiTest {
         );
     }
 
-    private function _prepare_revisions_and_test_common($test_namespace = false){
-        // nothing, @admin should see 404
-        $request = new TestRequest();
-        $response = $request->get(array(), '/doku.php?id=nonexist');
-        $this->assertTrue(
-            strpos($response->getContent(), 'mode_show') !== false,
-            'Visiting a non-exist page returns denied message.'
-        );
-        $this->assertTrue(
-            strpos($response->getContent(), 'notFound') !== false,
-            'Visiting a non-exist page did not return notFound message.'
-        );
-
+    private function _prepare_pub_draft_revisions_and_test_common($test_namespace = false){
         // init one approved and one draft
         saveWikiText('foo', 'This should get APPROVED', 'approved');
 
         $request = new TestRequest();
-        $response = $request->get(array(), '/doku.php?id=foo&publish_approve=1');
+        $response = $request->get(array(), '/doku.php?id=foo&publish_approve');
         $this->assertTrue(
             strpos($response->getContent(), '<div class="approval approved_yes">') !== false,
             'Approving a page failed with standard options.'
@@ -110,8 +109,7 @@ class approvel_test extends DokuWikiTest {
         saveWikiText('foo', 'This should be a DRAFT', 'draft');
         $draft_rev = @filemtime(wikiFN('foo'));
 
-        // draft-only page
-        saveWikiText('draft_only', 'This should be a DRAFT', 'draft');
+
 
         // a user with AUTH_EDIT or better will see the latest revision of a page
         // @admin should see the draft
@@ -127,13 +125,7 @@ class approvel_test extends DokuWikiTest {
         );
 
         // switch to @ALL - AUTH_READ
-        global $USERINFO;
-        $USERINFO = null;
-
-        global $default_server_vars;
-        $default_server_vars['REMOTE_USER'] = null; //Hack until Issue splitbrain/dokuwiki#1099 is fixed
-
-        $_SERVER['REMOTE_USER'] = null;
+        $this->logout();
 
         // @ALL should see approved revision
         $request = new TestRequest();
@@ -153,10 +145,12 @@ class approvel_test extends DokuWikiTest {
     /**
      * @coversNothing
      */
-    public function test_show_expected_revision(){
-        global $conf;
+    public function test_show_draft_only_revision(){
+        // draft-only page
+        saveWikiText('draft_only', 'This should be a DRAFT', 'draft');
 
-        $draft_rev = $this->_prepare_revisions_and_test_common();
+        // switch to @ALL - AUTH_READ
+        $this->logout();
 
         // someone with only AUTH_READ will see the latest approved revision by default (unless there isn't one)
         // page with no approved revision: show draft
@@ -170,40 +164,20 @@ class approvel_test extends DokuWikiTest {
             strpos($response->getContent(), 'This should be a DRAFT') !== false,
             'Visiting a draft-only page with AUTH_READ did not return draft revision.'
         );
-
-        // all users with AUTH_READ or better can view any revision of a page if they specifically request it – whether or not it is approved
-        $request = new TestRequest();
-        $response = $request->get(array(), '/doku.php?id=foo&rev='.$draft_rev);
-        $this->assertTrue(
-            strpos($response->getContent(), 'mode_show') !== false,
-            'Visiting a draft revision did not return in show mode.'
-        );
-        $this->assertTrue(
-            strpos($response->getContent(), 'This should be a DRAFT') !== false,
-            'Visiting a draft revision with AUTH_READ did not return draft content.'
-        );
-
-        // nothing, @ALL should see 404
-        $request = new TestRequest();
-        $response = $request->get(array(), '/doku.php?id=nonexist');
-        $this->assertTrue(
-            strpos($response->getContent(), 'mode_show') !== false,
-            'Visiting a non-exist page returns denied message.'
-        );
-        $this->assertTrue(
-            strpos($response->getContent(), 'notFound') !== false,
-            'Visiting a non-exist page did not return notFound message.'
-        );
     }
 
     /**
      * @coversNothing
      */
-    public function test_show_expected_revision_hide_drafts(){
+    public function test_show_draft_only_revision_hide_drafts(){
         global $conf;
         $conf['plugin']['publish']['hide drafts'] = 1;
 
-        $draft_rev = $this->_prepare_revisions_and_test_common();
+        // draft-only page
+        saveWikiText('draft_only', 'This should be a DRAFT', 'draft');
+
+        // switch to @ALL - AUTH_READ
+        $this->logout();
 
         // page with no approved revision: hide draft
         $request = new TestRequest();
@@ -216,6 +190,35 @@ class approvel_test extends DokuWikiTest {
             strpos($response->getContent(), 'This should be a DRAFT') === false,
             'Visiting a draft-only page with hide_drafts on with AUTH_READ returns draft content.'
         );
+    }
+
+    /**
+     * @coversNothing
+     */
+    public function test_show_expected_revision(){
+        $draft_rev = $this->_prepare_pub_draft_revisions_and_test_common();
+
+        // all users with AUTH_READ or better can view any revision of a page if they specifically request it – whether or not it is approved
+        $request = new TestRequest();
+        $response = $request->get(array(), '/doku.php?id=foo&rev='.$draft_rev);
+        $this->assertTrue(
+            strpos($response->getContent(), 'mode_show') !== false,
+            'Visiting a draft revision did not return in show mode.'
+        );
+        $this->assertTrue(
+            strpos($response->getContent(), 'This should be a DRAFT') !== false,
+            'Visiting a draft revision with AUTH_READ did not return draft content.'
+        );
+    }
+
+    /**
+     * @coversNothing
+     */
+    public function test_show_expected_revision_hide_drafts(){
+        global $conf;
+        $conf['plugin']['publish']['hide drafts'] = 1;
+
+        $draft_rev = $this->_prepare_pub_draft_revisions_and_test_common();
 
         // specifically request revision: without approval permission, the best is to deny it
         // but the current code redirect it to
@@ -229,17 +232,43 @@ class approvel_test extends DokuWikiTest {
             strpos($response->getContent(), 'This should be a DRAFT') === false,
             'Visiting a draft revision with hide_drafts on with AUTH_READ returns draft content.'
         );
+    }
+
+    private function _test_correct_404(){
+        // nothing, @admin should see 404
+        $request = new TestRequest();
+        $response = $request->get(array(), '/doku.php?id=nonexist');
+        $this->assertTrue(
+            strpos($response->getContent(), 'mode_show') !== false,
+            'Visiting a non-exist page with admin returns denied message.'
+        );
+        $this->assertTrue(
+            strpos($response->getContent(), 'notFound') !== false,
+            'Visiting a non-exist page with admin did not return notFound message.'
+        );
+
+        // switch to @ALL - AUTH_READ
+        $this->logout();
 
         // nothing, @ALL should see 404
         $request = new TestRequest();
         $response = $request->get(array(), '/doku.php?id=nonexist');
         $this->assertTrue(
             strpos($response->getContent(), 'mode_show') !== false,
-            'Visiting a non-exist page returns denied message.'
+            'Visiting a non-exist page without login returns denied message.'
         );
         $this->assertTrue(
             strpos($response->getContent(), 'notFound') !== false,
-            'Visiting a non-exist page did not return notFound message.'
+            'Visiting a non-exist page without login did not return notFound message.'
         );
+    }
+
+    public function test_correct_404(){
+        $this->_test_correct_404();
+    }
+
+    public function test_correct_404_hide_drafts(){
+        $conf['plugin']['publish']['hide drafts'] = 1;
+        $this->_test_correct_404();
     }
 }
