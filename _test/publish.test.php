@@ -33,7 +33,7 @@ class approvel_test extends DokuWikiTest {
         $conf['useacl']    = 1;
         $conf['superuser'] = '@admin';
         $AUTH_ACL = array(
-            '*                     @ALL        2',  // READ only
+            '*                     @ALL        1',  // READ only
             '*                     @author     4',  // EDIT
             '*                     @admin     16',);// DELETE
     }
