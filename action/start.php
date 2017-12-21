@@ -31,6 +31,7 @@ class action_plugin_publish_start extends DokuWiki_Action_Plugin {
             return;
         }
 
+        fwirte(STDERR, print_r($INFO['perm'], $this->hlp->isCurrentRevisionApproved(), true));
         if ($INFO['perm'] != AUTH_READ) {
             return;
         }
