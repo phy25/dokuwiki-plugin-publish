@@ -116,11 +116,11 @@ class approvel_test extends DokuWikiTest {
         $response = $request->get(array(), '/doku.php?id=foo');
         $this->assertTrue(
             strpos($response->getContent(), 'mode_show') !== false,
-            'Visiting a page did not return in show mode.'
+            'Visiting a page with draft with @admin did not return in show mode.'
         );
         $this->assertTrue(
             strpos($response->getContent(), 'This should be a DRAFT') !== false,
-            'Visiting a page with draft did not return draft revision.'
+            'Visiting a page with draft with @admin did not return draft revision.'
         );
 
         // switch to @ALL - AUTH_READ
@@ -137,8 +137,9 @@ class approvel_test extends DokuWikiTest {
         $response = $request->get(array(), '/doku.php?id=foo');
         $this->assertTrue(
             strpos($response->getContent(), 'mode_show') !== false,
-            'Visiting a page did not return in show mode.'
+            'Visiting a page with draft with AUTH_READ did not return in show mode.'
         );
+        fwrite(STDERR, print_r($response->getContent(), TRUE));
         $this->assertTrue(
             strpos($response->getContent(), 'This should get APPROVED') !== false,
             'Visiting a page with draft with AUTH_READ did not return approved revision.'
