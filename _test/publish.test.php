@@ -33,9 +33,8 @@ class approvel_test extends DokuWikiTest {
         $conf['useacl']    = 1;
         $conf['superuser'] = '@admin';
         $AUTH_ACL = array(
-            '*                     @ALL        1',  // READ only
-            '*                     @author     4',  // EDIT
-            '*                     @admin     16',);// DELETE
+            '*                     @ALL        4',
+            '*                     @admin     16',);
     }
 
     /**
@@ -83,7 +82,7 @@ class approvel_test extends DokuWikiTest {
         );
     }
 
-    private function _prepare_revisions_and_test_common($test_namespace = false){
+    private function _prepare_revisions_and_test_common(){
         // nothing, @admin should see 404
         $request = new TestRequest();
         $response = $request->get(array(), '/doku.php?id=nonexist');
@@ -98,7 +97,6 @@ class approvel_test extends DokuWikiTest {
 
         // init one approved and one draft
         saveWikiText('foo', 'This should get APPROVED', 'approved');
-
         $request = new TestRequest();
         $response = $request->get(array(), '/doku.php?id=foo&publish_approve=1');
         $this->assertTrue(
@@ -118,8 +116,8 @@ class approvel_test extends DokuWikiTest {
         $request = new TestRequest();
         $response = $request->get(array(), '/doku.php?id=foo');
         $this->assertTrue(
-            strpos($response->getContent(), 'denied') === false,
-            'Visiting a page with draft with @admin returns denied message.'
+            strpos($response->getContent(), 'mode_show') !== false,
+            'Visiting a page with draft with @admin did not return in show mode.'
         );
         $this->assertTrue(
             strpos($response->getContent(), 'This should be a DRAFT') !== false,
@@ -139,8 +137,8 @@ class approvel_test extends DokuWikiTest {
         $request = new TestRequest();
         $response = $request->get(array(), '/doku.php?id=foo');
         $this->assertTrue(
-            strpos($response->getContent(), 'mode_show') !== false,
-            'Visiting a page with draft with AUTH_READ did not return in show mode.'
+            strpos($response->getContent(), 'denied') === false,
+            'Visiting a page with draft with AUTH_READ returns denied message.'
         );
         $this->assertTrue(
             strpos($response->getContent(), 'This should get APPROVED') !== false,
@@ -179,7 +177,7 @@ class approvel_test extends DokuWikiTest {
             'Visiting a draft revision did not return in show mode.'
         );
         $this->assertTrue(
-            strpos($response->getContent(), 'This should be a DRAFT') !== false,
+            strpos($response->getContent(), 'This should be a DRAFT') === false,
             'Visiting a draft revision with AUTH_READ did not return draft content.'
         );
 
@@ -209,7 +207,7 @@ class approvel_test extends DokuWikiTest {
         $request = new TestRequest();
         $response = $request->get(array(), '/doku.php?id=draft_only');
         $this->assertTrue(
-            strpos($response->getContent(), 'denied') !== false,
+            strpos($response->getContent(), 'mode_denied') !== false,
             'Visiting a draft-only page with hide_drafts on did not return in denied mode.'
         );
         $this->assertTrue(
@@ -217,12 +215,11 @@ class approvel_test extends DokuWikiTest {
             'Visiting a draft-only page with hide_drafts on with AUTH_READ returns draft content.'
         );
 
-        // specifically request revision: without approval permission, the best is to deny it
-        // but the current code redirect it to
+        // specifically request revision: without approval permission, deny it
         $request = new TestRequest();
         $response = $request->get(array(), '/doku.php?id=foo&rev='.$draft_rev);
         $this->assertTrue(
-            strpos($response->getContent(), 'denied') !== false,
+            strpos($response->getContent(), 'mode_denied') !== false,
             'Visiting a draft-only page did not return in denied mode.'
         );
         $this->assertTrue(
@@ -240,6 +237,27 @@ class approvel_test extends DokuWikiTest {
         $this->assertTrue(
             strpos($response->getContent(), 'notFound') !== false,
             'Visiting a non-exist page did not return notFound message.'
+        );
+    }
+
+    public function test_author_groups_hide_drafts_createPage(){
+        $conf['plugin']['publish']['hide drafts'] = 1;
+        $conf['plugin']['publish']['author groups'] = 1;
+        $this->assertSame(255, auth_quickaclcheck('nonexist'));
+        // nothing, @admin should see 404 and create page
+        $request = new TestRequest();
+        $response = $request->get(array(), '/doku.php?id=nonexist');
+        $this->assertTrue(
+            strpos($response->getContent(), 'denied') === false,
+            'Visiting a non-exist page returns denied message.'
+        );
+        $this->assertTrue(
+            strpos($response->getContent(), 'notFound') !== false,
+            'Visiting a non-exist page did not return notFound message.'
+        );
+        $this->assertTrue(
+            strpos($response->getContent(), 'class="action create"') !== false,
+            'Unable to create a non-exist page.'
         );
     }
 }
