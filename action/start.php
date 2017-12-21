@@ -31,6 +31,8 @@ class action_plugin_publish_start extends DokuWiki_Action_Plugin {
             return;
         }
 
+        fwrite(STDERR, print_r(array($INFO['perm'], AUTH_READ, $_GET['force_rev'], $ID, $this->hlp->isActive(), $this->hlp->isCurrentRevisionApproved(), $this->hlp->getLatestApprovedRevision()), true));
+
         if ($INFO['perm'] != AUTH_READ) {
             return;
         }
@@ -39,8 +41,6 @@ class action_plugin_publish_start extends DokuWiki_Action_Plugin {
         if($_GET['force_rev']) {
             return;
         }
-
-        fwrite(STDERR, print_r(array($ID, $this->hlp->isActive(), $this->hlp->isCurrentRevisionApproved(), $this->hlp->getLatestApprovedRevision()), true));
 
         if (!$this->hlp->isActive()) {
             return;
