@@ -23,7 +23,7 @@ class action_plugin_publish_start extends DokuWiki_Action_Plugin {
         global $INFO;
         global $ID;
 
-        if ($ACT !== 'show') {
+        if ($ACT !== 'show' || (!is_array($ACT) && substr($ACT, 0, 7) == 'export_'))) {
             return;
         }
 
